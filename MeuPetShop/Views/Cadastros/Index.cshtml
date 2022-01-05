@@ -1,0 +1,49 @@
+﻿@{
+    ViewData["Title"] = "Home Page";
+}
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<div class="text-lg-left">
+    <label>Cadasto de Pessoa:</label>
+    <form>
+        <div class="form-group">
+            <label for="Nome">Nome:</label>
+            <input type="text" class="form-control" id="Nome">
+        </div>
+        <div class="form-group">
+            <label>Data de Nascimento</label>
+            <input type="date" id="start" name="trip-start">
+        </div>
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" value="" id="flexCheckDefault" checked>
+            <label class="form-check-label" for="flexCheckDefault">
+                Ativo
+            </label>
+        </div>
+    </form>
+
+</div>
+<button type="button" class="btn btn-primary" id="Salvar">Cadastrar</button>
+<script type="text/javascript">
+    $(window).on('load', function () {
+        
+        $("#Salvar").click(function () {
+            AtivoChecado = "False";
+            if ($('input[type="checkbox"]').is(":checked")) {
+                AtivoChecado = "True";
+            }
+            fetch('api/Pessoas/Create', {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ Nome: $("#Nome").val(), DataDeNascimento: $("#start").val(), Ativo: AtivoChecado  })
+            })
+                .then(response => response.json())
+                .then(() => {
+                  alert("usuario Cadastrado com sucesso")
+                })
+                .catch(error => alert('Não foi possivel adicionar usuário.' + error, error));
+        });
+    });
+</script>

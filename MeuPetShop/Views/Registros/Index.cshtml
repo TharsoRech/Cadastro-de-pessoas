@@ -1,0 +1,275 @@
+﻿@{
+    ViewData["Title"] = "Privacy Policy";
+}
+<style>
+    body {
+        background-color: whitesmoke;
+    }
+
+    .form-control {
+        max-width: 30%;
+    }
+
+    #Lista {
+        margin-top: 2%;
+        width: 60%;
+    }
+
+    #Salvar {
+        margin-left: 9%;
+        margin-bottom: 5%;
+    }
+
+    .NomeListaClasse {
+        margin-left: 15px;
+        border: none;
+    }
+
+    .IdadeListaClasse {
+        margin-left: 15px;
+        border: none;
+    }
+
+    .btn-primary {
+        margin-bottom: 10px;
+        display: flex;
+        gap: 25px;
+    }
+    input {
+        border: none;
+        background-color: transparent;
+    }
+    .input-group-append{
+        gap:10px;
+    }
+</style>
+<div class="row">
+    <div class="input-group col-md-4">
+        <span class="input-group-append">
+            Filtros:
+            <input class="form-control py-2" type="search" id="myInput" onkeyup="search()" placeholder="Nome">
+            <input class="form-control py-2" type="search" id="myInput1" onkeyup="search1()" placeholder="Faixa">
+            <input class="form-control py-2" type="search" id="myInput2" onkeyup="search2()" placeholder="Idade">
+        </span>
+    </div>
+</div>
+<table id="Lista" class="sortable">
+    <thead>
+        <tr>
+            <th class="col-md-4" data-field="Nome" data-editable="true">Nome</th>
+            <th id="IdadeCol" class="col-md-7" data-field="Idade" data-sortable="true" data-editable="true" data-editable-emptytext="Custom empty text.">Faixa Etária</th>
+            <th class="col-md-1" data-field="id" data-sortable="true" data-align="center">Idade</th>
+            <th class="col-md-1" data-field="id" data-sortable="true" data-align="center">Data de Nascimento</th>
+            <th class="col-md-1" data-field="id" data-sortable="true" data-align="center"></th>
+        </tr>
+    </thead>
+    <tbody>
+    </tbody>
+</table>
+<script src="https://www.kryogenix.org/code/browser/sorttable/sorttable.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script type="text/javascript">
+    var Count = 0;
+    var NomeSalvo = "";
+    var IdadeSalva = "";
+    $(window).on('load', function () {
+        $.ajax({
+            url: 'https://localhost:44316/api/Pessoas',
+            contentType: "application/json",
+            dataType: "json",
+            success: function (result) {
+                for (var order in result) {
+                    var CurrentRow = "Row" + Count;
+                    var EditRow = "Edit" + Count;
+                    var NomeRow = "NomeLista" + Count;
+                    var IdadeRow = "IdadeLista" + Count;
+                    var CancelRow = "Cancel" + Count;
+                    var idade = voltaridade(new Date(result[order].DataDeNascimento), new Date());
+                    var FaixaEtaria = VoltarFaixaEtaria(new Date(result[order].DataDeNascimento), new Date());
+                    var id = "'" + result[order].Id +"'";
+                    $('#Lista').append('<tr id=' + CurrentRow + '><td><input type="text" class="NomeListaClasse" value="' + result[order].Nome + '" id="' + NomeRow + '" readonly ></td><td><input type="text" class="FaixaEtariaListaClasse" value="' + FaixaEtaria + '" id="' + id + '" readonly ></td><td><input type="text"  Class="IdadeListaClasse" onkeypress="return isNumber(event)" value="' + idade + '" readonly></td><td><input type="text" class="DataDeNascimentoListaClasse" value="' + result[order].DataDeNascimento + '" id="' + IdadeRow + '" readonly ></td><td style="display: flex;gap: 25px;"><button  style="display: none;" type="button" class="btn btn-primary" onclick="Cancelar(' + NomeRow + ',' + IdadeRow + ',' + EditRow + ',' + CancelRow + ')"  id="' + CancelRow + '">Cancelar</button><button type="button" class="btn btn-primary" onclick="Editar(' + NomeRow + ',' + IdadeRow + ',' + EditRow + ',' + CancelRow + "," + id +' )"  id="' + EditRow + '">Editar</button><button type="button" onclick="Excluir(' + CurrentRow + "," + id + ')" class="btn btn-primary" id="Excluir">Excluir</button></td><tr>');
+                    Count = Count + 1;
+                }
+
+
+            }
+        })
+    });
+    function Excluir(currentrow, id1) {
+        if (confirm('Deseja remover este item ?')) {
+            DeleteDoBanco(id1, currentrow);
+        }
+    }
+
+    function Editar(nomerow, idaderow, editrow, cancelrow,id1) {
+        if ($(editrow).text() == "Editar") {
+            $(nomerow).attr("readonly", false);
+            $(idaderow).attr("readonly", false);
+            $(editrow).text("Salvar");
+            $(cancelrow).css("display", "block");
+            NomeSalvo = $(nomerow).val();
+            IdadeSalva = $(idaderow).val();
+        }
+        else {
+            $(nomerow).attr("readonly", true);
+            $(idaderow).attr("readonly", true);
+            $(editrow).text("Editar");
+            $(cancelrow).css("display", "none");
+            AtualizarnoBanco(id1,nomerow,idaderow);
+        }
+    }
+
+    function Cancelar(nomerow, idaderow, editrow, cancelrow) {
+        $(nomerow).val(NomeSalvo);
+        $(idaderow).val(IdadeSalva);
+        $(nomerow).attr("readonly", true);
+        $(idaderow).attr("readonly", true);
+        $(editrow).text("Editar");
+        $(cancelrow).css("display", "none");
+        nomesalvo = "";
+        IdadeSalva = "";
+    }
+    function isNumber(evt) {
+        evt = (evt) ? evt : window.event;
+        var charCode = (evt.which) ? evt.which : evt.keyCode;
+        if (charCode > 31 && (charCode < 48 || charCode > 57)) {
+            return false;
+        }
+        return true;
+    }
+
+    function voltaridade(nascimento, hoje) {
+        var diferencaAnos = hoje.getFullYear() - nascimento.getFullYear();
+        if (new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate()) <
+            new Date(hoje.getFullYear(), nascimento.getMonth(), nascimento.getDate()))
+            diferencaAnos--;
+        return diferencaAnos;
+    }
+    function VoltarFaixaEtaria(nascimento, hoje) {
+        var diferencaAnos = hoje.getFullYear() - nascimento.getFullYear();
+        if (new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate()) <
+            new Date(hoje.getFullYear(), nascimento.getMonth(), nascimento.getDate()))
+            diferencaAnos--;
+        if (diferencaAnos > -1 && diferencaAnos < 10) {
+            return "0-9";
+        }
+        if (diferencaAnos > 9 && diferencaAnos < 20) {
+            return "10-19";
+        }
+        if (diferencaAnos > 19 && diferencaAnos < 30) {
+            return "20-29";
+        }
+        if (diferencaAnos > 29 && diferencaAnos < 40) {
+            return "30-39";
+        }
+        if (diferencaAnos > 39 && diferencaAnos < 50) {
+            return "40-49";
+        }
+        if (diferencaAnos > 49 && diferencaAnos < 60) {
+            return "50-59";
+        }
+        if (diferencaAnos > 59 && diferencaAnos < 70) {
+            return "60-69";
+        }
+        if (diferencaAnos > 69 && diferencaAnos < 80) {
+            return "70-79";
+        }
+        if (diferencaAnos > 79 && diferencaAnos < 90) {
+            return "80-89";
+        }
+        if (diferencaAnos > 89 && diferencaAnos < 100) {
+            return "90-99";
+        }
+        if (diferencaAnos > 99) {
+            return "100...";
+        }
+        if (diferencaAnos < 0) {
+            return "Pessoa Não nasceu";
+        }
+        return diferencaAnos;
+    }
+    function search() {
+        var input, filter, table, tr, td, i, txtValue;
+        input = document.getElementById("myInput");
+        filter = input.value;
+        table = document.getElementById("Lista");
+        tr = table.getElementsByTagName("tr");
+        for (i = 0; i < tr.length; i++) {
+            found = "false";
+            td = tr[i].getElementsByTagName("td")[0];
+            if (td) {
+                txtValue = td.children[0].value;
+                if (txtValue.indexOf(filter) > -1) {
+                    tr[i].style.display = "";
+                } else {
+                    tr[i].style.display = "none";
+                }
+            }
+        }
+    }
+    function search1() {
+        var input, filter, table, tr, td1, i, txtValue;
+        input = document.getElementById("myInput1");
+        filter = input.value;
+        table = document.getElementById("Lista");
+        tr = table.getElementsByTagName("tr");
+        for (i = 0; i < tr.length; i++) {
+            td1 = tr[i].getElementsByTagName("td")[1];
+            if (td1) {
+                txtValue = td1.children[0].value;
+                if (txtValue.indexOf(filter) > -1) {
+                    tr[i].style.display = "";
+                } else {
+                    tr[i].style.display = "none";
+                }
+            }
+        }
+    }
+    function search2() {
+        var input, filter, table, tr, td2, i, txtValue;
+        input = document.getElementById("myInput2");
+        filter = input.value;
+        table = document.getElementById("Lista");
+        tr = table.getElementsByTagName("tr");
+        for (i = 0; i < tr.length; i++) {
+            td2 = tr[i].getElementsByTagName("td")[2];
+            if (td2) {
+                txtValue = td2.children[0].value;
+                if (txtValue.indexOf(filter) > -1) {
+                    tr[i].style.display = "";
+                } else {
+                    tr[i].style.display = "none";
+                }
+            }
+        }
+    }
+
+    function DeleteDoBanco(id1, currentrow) {
+        var ajxReq = $.ajax('https://localhost:44316/api/Pessoas/Delete' + id1, {
+            type: 'DELETE',
+                    success:(function () {
+                        alert("Elemento removido com sucesso");
+                        $(currentrow).remove();
+            }),
+                            error:(function () {
+                                alert("Ocorreu um erro ao tentar deletar o elemento");
+                            })
+        });
+
+
+    }
+
+    function AtualizarnoBanco(id1,nomerow,idaderow) {
+        var ajxReq = $.ajax('https://localhost:44316/api/Pessoas/Edit' + id1, {
+            type: 'PUT',
+            body: JSON.stringify({ Nome: $(nomerow).val(), DataDeNascimento: $(idaderow).val(), Ativo: "True" }),
+                    success:(function () {
+                        alert("Elemento Atulizado com sucesso");
+                    }),
+            error:(function () {
+                alert("Ocorreu um erro ao tentar Editar o elemento");
+            })
+        });
+
+    }
+</script>
